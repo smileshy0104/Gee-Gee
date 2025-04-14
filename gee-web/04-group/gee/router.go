@@ -33,12 +33,15 @@ func newRouter() *router {
 //
 // 注意: 如果遇到 "*"，则停止解析，确保只允许一个 "*"
 func parsePattern(pattern string) []string {
+	// 将路由模式字符串拆分为片段
 	vs := strings.Split(pattern, "/")
 
 	parts := make([]string, 0)
+	// 遍历路由片段数组，将每个片段添加到parts切片中
 	for _, item := range vs {
 		if item != "" {
 			parts = append(parts, item)
+			// 如果遇到 "*"，则停止解析，确保只允许一个 "*"
 			if item[0] == '*' {
 				break
 			}
@@ -54,6 +57,7 @@ func parsePattern(pattern string) []string {
 //	pattern: 路由模式字符串，例如 "/user/:id"
 //	handler: 处理该路由的函数
 func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
+	// 将路径拆分为片段
 	parts := parsePattern(pattern)
 
 	key := method + "-" + pattern
@@ -78,6 +82,7 @@ func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
 //	*node: 匹配的路由节点，如果没有匹配则返回 nil
 //	map[string]string: 路径参数，例如 {"id": "123"}
 func (r *router) getRoute(method string, path string) (*node, map[string]string) {
+	// 将路径拆分为片段
 	searchParts := parsePattern(path)
 	params := make(map[string]string)
 	root, ok := r.roots[method]
