@@ -44,7 +44,9 @@ func New() *Engine {
 // 返回:
 //   - *Engine: 创建的Engine实例。
 func Default() *Engine {
+	// 创建一个新的Engine实例，并添加默认的中间件。
 	engine := New()
+	// 添加默认的中间件。
 	engine.Use(Logger(), Recovery())
 	return engine
 }

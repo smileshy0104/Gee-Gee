@@ -6,13 +6,15 @@ import (
 )
 
 func main() {
+	// 创建一个新的引擎实例，并使用默认的配置。
 	r := gee.Default()
 	r.GET("/", func(c *gee.Context) {
-		c.String(http.StatusOK, "Hello Geektutu\n")
+		c.String(http.StatusOK, "Hello yyds\n")
 	})
 	// index out of range for testing Recovery()
+	// index超过数组长度，触发panic
 	r.GET("/panic", func(c *gee.Context) {
-		names := []string{"geektutu"}
+		names := []string{"yyds"}
 		c.String(http.StatusOK, names[100])
 	})
 
