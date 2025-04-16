@@ -43,13 +43,14 @@ func (c *Cache) Add(key string, value Value) {
 	// 如果键已经存在，则更新该键对应的值，并移动该节点到链表的头部。
 	if ele, ok := c.cache[key]; ok {
 		// 更新该键对应的值，并移动该节点到链表的头部。
+		// MoveToFront 将元素 e 移动到列表 l 的前面。如果 e 不是 l 的元素，则不会修改列表。该元素不能为 nil。
 		c.ll.MoveToFront(ele)
 		kv := ele.Value.(*entry)
 		// 更新已使用的内存大小
 		c.nbytes += int64(value.Len()) - int64(kv.value.Len())
 		kv.value = value
 	} else { // 不存在
-		// 添加一个键值对到缓存中
+		// 添加一个键值对到缓存中（头部）
 		ele := c.ll.PushFront(&entry{key, value})
 		// 将键值对添加到缓存中
 		c.cache[key] = ele
@@ -84,7 +85,7 @@ func (c *Cache) Get(key string) (value Value, ok bool) {
 // 当缓存达到其容量限制时，此方法用于释放空间。
 // 如果缓存为空，则此方法不执行任何操作。
 func (c *Cache) RemoveOldest() {
-	// 获取最旧的条目，即双向链表的尾部元素。（取到队首节点，从链表中删除。）
+	// 获取最旧的条目，即双向链表的尾部元素。（取链表中的最后一个元素）
 	ele := c.ll.Back()
 	// 如果存在最旧的条目，则进行移除操作。
 	if ele != nil {
