@@ -28,11 +28,13 @@ type Map struct {
 // 返回值：
 //   - 返回一个初始化好的 *Map 实例。
 func New(replicas int, fn Hash) *Map {
+	// 初始化 Map 结构体
 	m := &Map{
 		replicas: replicas,
 		hash:     fn,
 		hashMap:  make(map[int]string),
 	}
+	// 如果未提供自定义哈希函数，则使用默认的 crc32.ChecksumIEEE
 	if m.hash == nil {
 		m.hash = crc32.ChecksumIEEE
 	}
@@ -48,10 +50,15 @@ func New(replicas int, fn Hash) *Map {
 //	对于每个键，根据其虚拟副本数量生成多个哈希值，并将其添加到 keys 和 hashMap 中。
 //	最后对 keys 列表进行排序，以便后续高效查找。
 func (m *Map) Add(keys ...string) {
+	// 遍历每个键，生成虚拟副本并添加到 keys 和 hashMap 中
 	for _, key := range keys {
+		// 生成虚拟副本
 		for i := 0; i < m.replicas; i++ {
+			// 计算哈希值
 			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
+			// 将哈希值和键添加到 keys 和 hashMap 中
 			m.keys = append(m.keys, hash)
+			// 将哈希值和键添加到 hashMap 中
 			m.hashMap[hash] = key
 		}
 	}
@@ -74,11 +81,12 @@ func (m *Map) Get(key string) string {
 		return ""
 	}
 
+	// 计算给定键的哈希值
 	hash := int(m.hash([]byte(key)))
 	// 使用二分查找定位合适的虚拟副本位置
 	idx := sort.Search(len(m.keys), func(i int) bool {
 		return m.keys[i] >= hash
 	})
-
+	// 如果未找到匹配项，则循环回到列表的第一个元素
 	return m.hashMap[m.keys[idx%len(m.keys)]] // 返回对应的实际键
 }
