@@ -6,18 +6,27 @@ import (
 	"strconv"
 )
 
-// Hash maps bytes to uint32
+// Hash 定义了一个将字节数组映射到 uint32 的函数类型。
+// 该类型用于指定哈希算法，允许用户自定义哈希函数。
 type Hash func(data []byte) uint32
 
-// Map constains all hashed keys
+// Map 是一致性哈希的核心结构，包含所有已哈希的键及其对应的节点。
+// keys 字段存储了所有哈希值，并保持排序以支持高效的查找操作。
+// hashMap 字段用于存储哈希值与实际键的映射关系。
 type Map struct {
-	hash     Hash
-	replicas int
-	keys     []int // Sorted
-	hashMap  map[int]string
+	hash     Hash           // 用于计算哈希值的函数
+	replicas int            // 每个节点的虚拟副本数量
+	keys     []int          // 已排序的哈希值列表
+	hashMap  map[int]string // 哈希值到实际键的映射
 }
 
-// New creates a Map instance
+// New 创建一个新的 Map 实例。
+// 参数：
+//   - replicas: 每个节点的虚拟副本数量，用于提高哈希分布的均匀性。
+//   - fn: 自定义的哈希函数，如果为 nil，则默认使用 crc32.ChecksumIEEE。
+//
+// 返回值：
+//   - 返回一个初始化好的 *Map 实例。
 func New(replicas int, fn Hash) *Map {
 	m := &Map{
 		replicas: replicas,
@@ -30,7 +39,14 @@ func New(replicas int, fn Hash) *Map {
 	return m
 }
 
-// Add adds some keys to the hash.
+// Add 将一组键添加到一致性哈希环中。
+// 参数：
+//   - keys: 要添加的键的可变参数列表。
+//
+// 功能描述：
+//
+//	对于每个键，根据其虚拟副本数量生成多个哈希值，并将其添加到 keys 和 hashMap 中。
+//	最后对 keys 列表进行排序，以便后续高效查找。
 func (m *Map) Add(keys ...string) {
 	for _, key := range keys {
 		for i := 0; i < m.replicas; i++ {
@@ -39,20 +55,30 @@ func (m *Map) Add(keys ...string) {
 			m.hashMap[hash] = key
 		}
 	}
-	sort.Ints(m.keys)
+	sort.Ints(m.keys) // 对哈希值列表进行排序
 }
 
-// Get gets the closest item in the hash to the provided key.
+// Get 根据给定的键找到最接近的节点。
+// 参数：
+//   - key: 要查找的键。
+//
+// 返回值：
+//   - 返回与给定键最接近的节点名称。如果没有可用节点，则返回空字符串。
+//
+// 功能描述：
+//
+//	首先计算给定键的哈希值，然后通过二分查找在已排序的 keys 列表中找到第一个大于等于该哈希值的位置。
+//	如果未找到匹配项，则循环回到列表的第一个元素。
 func (m *Map) Get(key string) string {
 	if len(m.keys) == 0 {
 		return ""
 	}
 
 	hash := int(m.hash([]byte(key)))
-	// Binary search for appropriate replica.
+	// 使用二分查找定位合适的虚拟副本位置
 	idx := sort.Search(len(m.keys), func(i int) bool {
 		return m.keys[i] >= hash
 	})
 
-	return m.hashMap[m.keys[idx%len(m.keys)]]
+	return m.hashMap[m.keys[idx%len(m.keys)]] // 返回对应的实际键
 }
