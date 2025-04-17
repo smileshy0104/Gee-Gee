@@ -54,7 +54,7 @@ func (m *Map) Add(keys ...string) {
 	for _, key := range keys {
 		// 生成虚拟副本
 		for i := 0; i < m.replicas; i++ {
-			// 计算哈希值
+			// 计算哈希值（hash：i+key）
 			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
 			// 将哈希值和键添加到 keys 和 hashMap 中
 			m.keys = append(m.keys, hash)
