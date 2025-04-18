@@ -31,6 +31,7 @@ func createGroup() *geecache.Group {
 	return geecache.NewGroup("scores", 2<<10, geecache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
+			// 从数据库中获取指定键的值，如果键存在则返回值，否则返回错误信息。
 			if v, ok := db[key]; ok {
 				return []byte(v), nil
 			}
@@ -45,8 +46,11 @@ func createGroup() *geecache.Group {
 // - addrs: 所有缓存服务器的地址列表
 // - gee: geecache组指针
 func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
+	// 创建一个 HTTPPool，用于管理 HTTP 缓存服务的节点。
 	peers := geecache.NewHTTPPool(addr)
+	// 设置 HTTPPool 的节点信息，即所有缓存服务器的地址。
 	peers.Set(addrs...)
+	// 将 HTTPPool 注册到 geecache 组中，以供其他缓存服务器使用。
 	gee.RegisterPeers(peers)
 	log.Println("geecache is running at", addr)
 	log.Fatal(http.ListenAndServe(addr[7:], peers))
@@ -58,15 +62,20 @@ func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
 // - apiAddr: API服务器的地址
 // - gee: geecache组指针
 func startAPIServer(apiAddr string, gee *geecache.Group) {
+	// 创建一个 HTTP 处理函数，用于处理 API 请求。
 	http.Handle("/api", http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			// 处理 API 请求，获取指定键的值。
 			key := r.URL.Query().Get("key")
+			// 调用 geecache 组的 Get 方法获取指定键的值。
 			view, err := gee.Get(key)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			// 将值写入 HTTP 响应体中，设置响应头为 application/octet-stream，表示返回的是字节流。
 			w.Header().Set("Content-Type", "application/octet-stream")
+			// 将字节流写入 HTTP 响应体中。
 			w.Write(view.ByteSlice())
 		}))
 	log.Println("fontend server is running at", apiAddr)
