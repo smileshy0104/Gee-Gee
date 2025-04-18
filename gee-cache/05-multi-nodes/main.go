@@ -96,10 +96,13 @@ func main() {
 	for _, v := range addrMap {
 		addrs = append(addrs, v)
 	}
-
+	// 创建一个 geecache 组，并启动缓存服务器
 	gee := createGroup()
+	// 根据 api 参数判断是否启动 API 服务器
 	if api {
+		// 启动 API 服务器
 		go startAPIServer(apiAddr, gee)
 	}
+	// 启动缓存服务器
 	startCacheServer(addrMap[port], addrs, gee)
 }
