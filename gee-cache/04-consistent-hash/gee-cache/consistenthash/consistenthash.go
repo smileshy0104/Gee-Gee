@@ -73,10 +73,10 @@ func (m *Map) Add(keys ...string) {
 // 计算给定键的哈希值，并通过二分查找找到第一个大于等于该哈希值的键。
 // 如果找不到，则返回环中第一个节点（即最小的哈希值对应的节点）。
 func (m *Map) Get(key string) string {
+	// 如果哈希环为空，则返回空字符串。
 	if len(m.keys) == 0 {
 		return ""
 	}
-
 	hash := int(m.hash([]byte(key)))
 	// 使用二分查找定位适当的虚拟副本。
 	idx := sort.Search(len(m.keys), func(i int) bool {
@@ -86,4 +86,9 @@ func (m *Map) Get(key string) string {
 	fmt.Println(m.keys[idx%len(m.keys)])
 	fmt.Println(m.hashMap[m.keys[idx%len(m.keys)]])
 	return m.hashMap[m.keys[idx%len(m.keys)]]
+}
+
+func (m *Map) PrintlnTest() {
+	fmt.Println("m.keys:", m.keys)
+	fmt.Println("m.hashMap:", m.hashMap)
 }

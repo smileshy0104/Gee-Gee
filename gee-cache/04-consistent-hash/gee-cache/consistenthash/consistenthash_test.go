@@ -1,6 +1,7 @@
 package consistenthash
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -29,14 +30,14 @@ func TestHashing(t *testing.T) {
 		"23": "4",
 		"27": "2",
 	}
-
+	hash.PrintlnTest()
 	// 遍历测试用例，验证每个键是否映射到预期的节点。
 	for k, v := range testCases {
 		if hash.Get(k) != v {
 			t.Errorf("Asking for %s, should have yielded %s", k, v)
 		}
 	}
-
+	fmt.Println("====================================================")
 	// 添加新键值 "8"，生成对应的哈希值和虚拟节点。
 	hash.Add("8")
 
