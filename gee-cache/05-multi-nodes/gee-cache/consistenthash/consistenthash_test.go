@@ -36,6 +36,7 @@ func TestHashing(t *testing.T) {
 		if hash.Get(k) != v {
 			t.Errorf("Asking for %s, should have yielded %s", k, v)
 		}
+		fmt.Println("********************")
 	}
 	fmt.Println("====================================================")
 	// 添加新键值 "8"，生成对应的哈希值和虚拟节点。
@@ -49,5 +50,6 @@ func TestHashing(t *testing.T) {
 		if hash.Get(k) != v {
 			t.Errorf("Asking for %s, should have yielded %s", k, v)
 		}
+		fmt.Println("********************")
 	}
 }
