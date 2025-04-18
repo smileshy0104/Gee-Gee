@@ -27,6 +27,7 @@ var db = map[string]string{
 // createGroup 创建一个geecache组
 // 返回值: geecache.Group指针，用于操作缓存
 func createGroup() *geecache.Group {
+	// 创建一个geecache组，名称为"scores"，最大容量为2KB，GetterFunc为获取数据的函数。
 	return geecache.NewGroup("scores", 2<<10, geecache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
@@ -37,7 +38,7 @@ func createGroup() *geecache.Group {
 		}))
 }
 
-// startCacheServer() 用来启动缓存服务器：创建 HTTPPool，添加节点信息，注册到 gee 中，启动 HTTP 服务（共3个端口，8001/8002/8003），用户不感知。
+// TODO startCacheServer() 用来启动缓存服务器：创建 HTTPPool，添加节点信息，注册到 gee 中，启动 HTTP 服务（共3个端口，8001/8002/8003），用户不感知。
 // startCacheServer 启动缓存服务器
 // 参数:
 // - addr: 当前缓存服务器的地址
@@ -51,7 +52,7 @@ func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
 	log.Fatal(http.ListenAndServe(addr[7:], peers))
 }
 
-// startAPIServer() 用来启动一个 API 服务（端口 9999），与用户进行交互，用户感知。
+// TODO startAPIServer() 用来启动一个 API 服务（端口 9999），与用户进行交互，用户感知。
 // startAPIServer 启动API服务器
 // 参数:
 // - apiAddr: API服务器的地址
@@ -81,13 +82,16 @@ func main() {
 	flag.BoolVar(&api, "api", false, "Start a api server?")
 	flag.Parse()
 
+	// apiAddr 表示 API 服务的地址，默认为 http://localhost:9999
 	apiAddr := "http://localhost:9999"
+	// addrMap 表示缓存服务器的地址，默认为 http://localhost:8001/8002/8003
 	addrMap := map[int]string{
 		8001: "http://localhost:8001",
 		8002: "http://localhost:8002",
 		8003: "http://localhost:8003",
 	}
 
+	// addrs 表示所有缓存服务器的地址
 	var addrs []string
 	for _, v := range addrMap {
 		addrs = append(addrs, v)
