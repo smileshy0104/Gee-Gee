@@ -2,6 +2,7 @@ package geecache
 
 import (
 	"fmt"
+	"gee-web/gee-cache/06-single-flight/gee-cache/singleflight"
 	"log"
 	"sync"
 )
@@ -14,6 +15,9 @@ type Group struct {
 	getter    Getter     // 数据加载器，用于从外部源获取数据
 	mainCache cache      // 主缓存，存储本地缓存数据
 	peers     PeerPicker // 对等节点选择器，用于选择远程对等节点
+	// use singleflight.Group to make sure that
+	// each key is only fetched once
+	loader *singleflight.Group
 }
 
 // Getter 是一个接口，定义了通过键加载数据的方法。
@@ -60,6 +64,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 		name:      name,
 		getter:    getter,
 		mainCache: cache{cacheBytes: cacheBytes},
+		loader:    &singleflight.Group{},
 	}
 	groups[name] = g
 	return g
@@ -118,18 +123,27 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 // TODO 修改 load 方法，使用 PickPeer() 方法选择节点，若非本机节点，则调用 getFromPeer() 从远程获取。若是本机节点或失败，则回退到 getLocally()。
 // load 尝试从远程对等节点或本地加载器获取值，并将其填充到本地缓存中。
 func (g *Group) load(key string) (value ByteView, err error) {
-	// 如果存在 PeerPicker，则尝试从远程对等节点获取值
-	if g.peers != nil {
-		if peer, ok := g.peers.PickPeer(key); ok {
-			if value, err = g.getFromPeer(peer, key); err == nil {
-				return value, nil
-			}
-			log.Println("[GeeCache] Failed to get from peer", err)
-		}
-	}
+	// 使用 g.loader.Do 方法，确保每个键只被加载一次
+	viewi, err := g.loader.Do(key, func() (interface{}, error) {
 
-	// 如果远程对等节点获取失败，则从本地加载器获取值
-	return g.getLocally(key)
+		// 如果存在 PeerPicker，则尝试从远程对等节点获取值
+		if g.peers != nil {
+			if peer, ok := g.peers.PickPeer(key); ok {
+				if value, err = g.getFromPeer(peer, key); err == nil {
+					return value, nil
+				}
+				log.Println("[GeeCache] Failed to get from peer", err)
+			}
+		}
+
+		// 如果远程对等节点获取失败，则从本地加载器获取值
+		return g.getLocally(key)
+	})
+
+	if err == nil {
+		return viewi.(ByteView), nil
+	}
+	return
 }
 
 // populateCache 将值填充到本地缓存中。
