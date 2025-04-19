@@ -12,7 +12,7 @@ kkk not exist
 import (
 	"flag"
 	"fmt"
-	geecache "gee-web/gee-cache/05-multi-nodes/gee-cache"
+	geecache "gee-web/gee-cache/06-single-flight/gee-cache"
 	"log"
 	"net/http"
 )
