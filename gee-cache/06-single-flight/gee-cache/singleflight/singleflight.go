@@ -2,6 +2,7 @@ package singleflight
 
 import "sync"
 
+// TODO call 代表正在进行中，或已经结束的请求。使用 sync.WaitGroup 锁避免重入。
 // call 表示正在进行中或已完成的 Do 调用。
 // 它包含函数调用的结果、错误以及用于同步的 WaitGroup。
 type call struct {
@@ -10,7 +11,7 @@ type call struct {
 	err error          // 函数调用的错误
 }
 
-// Group 是 singleflight 的主数据结构，管理不同 key 的请求(call)。
+// TODO Group 是 singleflight 的主数据结构，管理不同 key 的请求(call)。
 // Group 表示一类工作，并形成一个命名空间，
 // 在该命名空间中可以执行任务并实现重复请求的抑制。
 type Group struct {
@@ -31,6 +32,7 @@ type Group struct {
 //   - interface{}: 函数 fn 的执行结果。
 //   - error: 函数 fn 执行过程中可能产生的错误。
 func (g *Group) Do(key string, fn func() (interface{}, error)) (interface{}, error) {
+	// g.mu 是保护 Group 的成员变量 m 不被并发读写而加上的锁。
 	g.mu.Lock()
 	// 如果映射 m 尚未初始化，则进行懒初始化。
 	if g.m == nil {
