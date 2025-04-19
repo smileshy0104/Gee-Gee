@@ -30,8 +30,8 @@ type HTTPPool struct {
 // NewHTTPPool 初始化一个 HTTP 节点池。
 func NewHTTPPool(self string) *HTTPPool {
 	return &HTTPPool{
-		self:     self,
-		basePath: defaultBasePath,
+		self:     self,            // addr: 当前缓存服务器的地址
+		basePath: defaultBasePath, // 默认的基础路径
 	}
 }
 
