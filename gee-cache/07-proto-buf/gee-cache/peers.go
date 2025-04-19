@@ -1,5 +1,7 @@
 package geecache
 
+import pb "gee-web/gee-cache/07-proto-buf/gee-cache/geecachepb"
+
 // TODO　PeerPicker 的 PickPeer() 方法用于根据传入的 key 选择相应节点 PeerGetter。
 // PeerPicker 是一个接口，用于实现定位拥有特定 key 的 peer 的功能。
 //
@@ -30,5 +32,6 @@ type PeerPickerFunc func(key string) (peer PeerGetter, ok bool)
 //   - []byte: 缓存数据的内容，如果未找到则可能返回空切片。
 //   - error: 如果发生错误，则返回具体的错误信息；否则返回 nil。
 type PeerGetter interface {
-	Get(group string, key string) ([]byte, error)
+	GetOld(group string, key string) ([]byte, error)
+	Get(in *pb.Request, out *pb.Response) error
 }

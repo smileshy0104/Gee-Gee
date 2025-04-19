@@ -3,6 +3,7 @@ package geecache
 import (
 	"fmt"
 	"gee-web/gee-cache/06-single-flight/gee-cache/singleflight"
+	pb "gee-web/gee-cache/07-proto-buf/gee-cache/geecachepb"
 	"log"
 	"sync"
 )
@@ -164,10 +165,39 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 
 // TODO 实现了 PeerGetter 接口的 httpGetter 从访问远程节点，获取缓存值。
 // getFromPeer 从远程对等节点获取值。
-func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
-	bytes, err := peer.Get(g.name, key)
+func (g *Group) getFromPeerOld(peer PeerGetter, key string) (ByteView, error) {
+	bytes, err := peer.GetOld(g.name, key)
 	if err != nil {
 		return ByteView{}, err
 	}
 	return ByteView{b: bytes}, nil
+}
+
+// TODO 实现了 PeerGetter 接口的 httpGetter 从访问远程节点，获取缓存值。
+// getFromPeer 从指定的peer节点获取键值对应的值。
+// 参数:
+//
+//	peer: 一个实现了PeerGetter接口的peer节点，用于执行获取操作。
+//	key: 需要获取的键值。
+//
+// 返回值:
+//
+//	ByteView: 一个包含键对应值的ByteView实例。
+//	error: 如果获取操作失败，返回错误信息。
+func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
+	// 创建一个请求实例，包含组名和键值。
+	req := &pb.Request{
+		Group: g.name,
+		Key:   key,
+	}
+	// 创建一个响应实例，用于接收peer节点返回的数据。
+	res := &pb.Response{}
+	// 通过peer节点的Get方法发送请求并接收响应。
+	err := peer.Get(req, res)
+	if err != nil {
+		// 如果发生错误，返回一个空的ByteView实例和错误信息。
+		return ByteView{}, err
+	}
+	// 返回一个包含响应值的ByteView实例。
+	return ByteView{b: res.Value}, nil
 }
