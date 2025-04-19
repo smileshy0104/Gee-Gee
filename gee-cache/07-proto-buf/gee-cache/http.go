@@ -3,6 +3,8 @@ package geecache
 import (
 	"fmt"
 	"gee-web/gee-cache/05-multi-nodes/gee-cache/consistenthash"
+	pb "gee-web/gee-cache/07-proto-buf/gee-cache/geecachepb"
+	"github.com/golang/protobuf/proto"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -69,8 +71,17 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/octet-stream") // 设置响应头
-	w.Write(view.ByteSlice())                                  // 写入响应体
+	//w.Header().Set("Content-Type", "application/octet-stream") // 设置响应头
+	//w.Write(view.ByteSlice())                                  // 写入响应体
+
+	// Write the value to the response body as a proto message.
+	body, err := proto.Marshal(&pb.Response{Value: view.ByteSlice()})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(body)
 }
 
 // Set() 方法实例化了一致性哈希算法，并且添加了传入的节点。
@@ -107,7 +118,7 @@ type httpGetter struct {
 
 // PickerPeer() 包装了一致性哈希算法的 Get() 方法，根据具体的 key，选择节点，返回节点对应的 HTTP 客户端。
 // Get 从指定组和键获取数据
-func (h *httpGetter) Get(group string, key string) ([]byte, error) {
+func (h *httpGetter) GetOld(group string, key string) ([]byte, error) {
 	u := fmt.Sprintf(
 		"%v%v/%v",              // 构建请求 URL
 		h.baseURL,              // baseURL 表示将要访问的远程节点的地址，例如 http://example.com/_geecache/。
@@ -131,6 +142,54 @@ func (h *httpGetter) Get(group string, key string) ([]byte, error) {
 	}
 
 	return bytes, nil // 返回获取到的数据
+}
+
+// Get 实现了 httpGetter 的 Get 方法，用于获取指定键值的响应。
+// 该方法构造请求URL，发送HTTP GET请求，并处理响应结果。
+// 参数:
+//
+//	in: 包含请求信息的protobuf对象，包括组和键。
+//	out: 用于存储响应数据的protobuf对象。
+//
+// 返回值:
+//
+//	如果请求成功且响应数据能够成功解析到out中，则返回nil；
+//	否则，返回相应的错误。
+func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
+	// 构造请求URL，包括基础URL、组和键，确保它们被正确地URL编码。
+	u := fmt.Sprintf(
+		"%v%v/%v",
+		h.baseURL,
+		url.QueryEscape(in.GetGroup()),
+		url.QueryEscape(in.GetKey()),
+	)
+
+	// 发送HTTP GET请求到构造的URL。
+	res, err := http.Get(u)
+	if err != nil {
+		return err
+	}
+	// 确保在函数返回前关闭响应体。
+	defer res.Body.Close()
+
+	// 检查HTTP响应状态码是否为200 OK。
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("server returned: %v", res.Status)
+	}
+
+	// 读取响应体中的数据。
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("reading response body: %v", err)
+	}
+
+	// 将读取的响应数据解析到out protobuf对象中。
+	if err = proto.Unmarshal(bytes, out); err != nil {
+		return fmt.Errorf("decoding response body: %v", err)
+	}
+
+	// 成功完成请求，返回nil。
+	return nil
 }
 
 var _ PeerGetter = (*httpGetter)(nil) // 确保 httpGetter 实现了 PeerGetter 接口
