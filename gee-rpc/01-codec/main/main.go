@@ -53,8 +53,8 @@ func main() {
 	for i := 0; i < 5; i++ {
 		// 发送请求
 		h := &codec.Header{
-			ServiceMethod: "Foo.Sum",
-			Seq:           uint64(i),
+			ServiceMethod: "Foo.Sum", // ServiceMethod 是服务名和方法名
+			Seq:           uint64(i), // 请求序号
 		}
 		// 编码请求
 		_ = cc.Write(h, fmt.Sprintf("geerpc req %d", h.Seq))
