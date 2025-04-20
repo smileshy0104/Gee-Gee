@@ -16,6 +16,7 @@ type GobCodec struct {
 	enc  *gob.Encoder       // gob 编码器，用于将数据编码后写入连接。
 }
 
+// GobCodec 实现了 Codec 接口，使用 gob 包进行序列化和反序列化。
 var _ Codec = (*GobCodec)(nil)
 
 // NewGobCodec 创建一个新的 GobCodec 实例。
@@ -25,7 +26,9 @@ var _ Codec = (*GobCodec)(nil)
 // 返回值:
 //   - Codec 接口的实现，用于处理 gob 编码和解码。
 func NewGobCodec(conn io.ReadWriteCloser) Codec {
+	// 创建一个缓冲写入器，用于优化写操作。
 	buf := bufio.NewWriter(conn)
+	// 创建一个 gob 编码器，用于将数据编码后写入缓冲写入器。
 	return &GobCodec{
 		conn: conn,
 		buf:  buf,
@@ -41,6 +44,7 @@ func NewGobCodec(conn io.ReadWriteCloser) Codec {
 // 返回值:
 //   - error: 如果解码失败，则返回错误；否则返回 nil。
 func (c *GobCodec) ReadHeader(h *Header) error {
+	// 从连接中解码并读取 Header 数据。
 	return c.dec.Decode(h)
 }
 
@@ -51,6 +55,7 @@ func (c *GobCodec) ReadHeader(h *Header) error {
 // 返回值:
 //   - error: 如果解码失败，则返回错误；否则返回 nil。
 func (c *GobCodec) ReadBody(body interface{}) error {
+	// 从连接中解码并读取消息体数据。
 	return c.dec.Decode(body)
 }
 
@@ -70,10 +75,12 @@ func (c *GobCodec) Write(h *Header, body interface{}) (err error) {
 			_ = c.Close() // 如果发生错误，则关闭连接以释放资源。
 		}
 	}()
+	// 编码并写入 Header 和消息体数据。
 	if err = c.enc.Encode(h); err != nil {
 		log.Println("rpc: gob error encoding header:", err)
 		return
 	}
+	// 编码并写入消息体数据。
 	if err = c.enc.Encode(body); err != nil {
 		log.Println("rpc: gob error encoding body:", err)
 		return
@@ -85,5 +92,6 @@ func (c *GobCodec) Write(h *Header, body interface{}) (err error) {
 // 返回值:
 //   - error: 如果关闭连接失败，则返回错误；否则返回 nil。
 func (c *GobCodec) Close() error {
+	// 关闭底层的网络连接。
 	return c.conn.Close()
 }

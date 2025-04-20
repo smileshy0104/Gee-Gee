@@ -27,6 +27,7 @@ func startServer(addr chan string) {
 	log.Println("start rpc server on", l.Addr())
 	// 将服务器绑定地址发送到addr通道
 	addr <- l.Addr().String()
+	// 接受客户端的连接请求
 	geerpc.Accept(l)
 }
 

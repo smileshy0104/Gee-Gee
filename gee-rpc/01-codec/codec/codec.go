@@ -34,6 +34,8 @@ var NewCodecFuncMap map[Type]NewCodecFunc
 
 // init 函数用于初始化 NewCodecFuncMap，并注册已有的编解码器创建函数。
 func init() {
+	// 初始化 NewCodecFuncMap
 	NewCodecFuncMap = make(map[Type]NewCodecFunc)
+	// 注册 Gob 编解码器的创建函数
 	NewCodecFuncMap[GobType] = NewGobCodec
 }

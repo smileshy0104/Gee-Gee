@@ -22,8 +22,8 @@ type Option struct {
 
 // DefaultOption 是默认的 Option 实例。
 var DefaultOption = &Option{
-	MagicNumber: MagicNumber,
-	CodecType:   codec.GobType,
+	MagicNumber: MagicNumber,   // 魔数，用于标记这是一个 geerpc 请求
+	CodecType:   codec.GobType, // 客户端可以选择不同的编解码器来编码请求体
 }
 
 // Server 表示一个 RPC 服务器。
@@ -40,16 +40,20 @@ var DefaultServer = NewServer()
 // ServeConn 在单个连接上运行服务器。
 // ServeConn 会阻塞，直到客户端断开连接。
 func (server *Server) ServeConn(conn io.ReadWriteCloser) {
+	// 确保连接被关闭
 	defer func() { _ = conn.Close() }()
 	var opt Option
+	// 从连接中读取选项
 	if err := json.NewDecoder(conn).Decode(&opt); err != nil {
 		log.Println("rpc server: options error: ", err)
 		return
 	}
+	// 检查选项的魔数
 	if opt.MagicNumber != MagicNumber {
 		log.Printf("rpc server: invalid magic number %x", opt.MagicNumber)
 		return
 	}
+	// 根据选项的编解码器类型创建编解码器
 	f := codec.NewCodecFuncMap[opt.CodecType]
 	if f == nil {
 		log.Printf("rpc server: invalid codec type %s", opt.CodecType)
@@ -139,14 +143,19 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 // Accept 接受监听器上的连接并为每个传入连接提供服务。
 func (server *Server) Accept(lis net.Listener) {
 	for {
+		// 接受客户端的连接请求
 		conn, err := lis.Accept()
 		if err != nil {
 			log.Println("rpc server: accept error:", err)
 			return
 		}
+		// 为每个连接提供服务
 		go server.ServeConn(conn)
 	}
 }
 
 // Accept 接受监听器上的连接并为每个传入连接提供服务。
-func Accept(lis net.Listener) { DefaultServer.Accept(lis) }
+func Accept(lis net.Listener) {
+	// 将服务器绑定地址发送到addr通道
+	DefaultServer.Accept(lis)
+}
