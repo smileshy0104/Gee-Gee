@@ -1,14 +1,5 @@
 package main
 
-// 示例API请求和响应
-/*
-$ curl "http://localhost:9999/api?key=Tom"
-630
-
-$ curl "http://localhost:9999/api?key=kkk"
-kkk not exist
-*/
-
 import (
 	"flag"
 	"fmt"
@@ -39,23 +30,6 @@ func createGroup() *geecache.Group {
 		}))
 }
 
-// TODO startCacheServer() 用来启动缓存服务器：创建 HTTPPool，添加节点信息，注册到 gee 中，启动 HTTP 服务（共3个端口，8001/8002/8003），用户不感知。
-// startCacheServer 启动缓存服务器
-// 参数:
-// - addr: 当前缓存服务器的地址
-// - addrs: 所有缓存服务器的地址列表
-// - gee: geecache组指针
-func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
-	// 创建一个 HTTPPool，用于管理 HTTP 缓存服务的节点。
-	peers := geecache.NewHTTPPool(addr)
-	// 设置 HTTPPool 的节点信息，即所有缓存服务器的地址。
-	peers.Set(addrs...)
-	// 将 HTTPPool 注册到 geecache 组中，以供其他缓存服务器使用。
-	gee.RegisterPeers(peers)
-	log.Println("geecache is running at", addr)
-	log.Fatal(http.ListenAndServe(addr[7:], peers))
-}
-
 // TODO startAPIServer() 用来启动一个 API 服务（端口 9999），与用户进行交互，用户感知。
 // startAPIServer 启动API服务器
 // 参数:
@@ -80,6 +54,23 @@ func startAPIServer(apiAddr string, gee *geecache.Group) {
 		}))
 	log.Println("fontend server is running at", apiAddr)
 	log.Fatal(http.ListenAndServe(apiAddr[7:], nil))
+}
+
+// TODO startCacheServer() 用来启动缓存服务器：创建 HTTPPool，添加节点信息，注册到 gee 中，启动 HTTP 服务（共3个端口，8001/8002/8003），用户不感知。
+// startCacheServer 启动缓存服务器
+// 参数:
+// - addr: 当前缓存服务器的地址
+// - addrs: 所有缓存服务器的地址列表
+// - gee: geecache组指针
+func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
+	// 创建一个 HTTPPool，用于管理 HTTP 缓存服务的节点。
+	peers := geecache.NewHTTPPool(addr)
+	// 设置 HTTPPool 的节点信息，即所有缓存服务器的地址。
+	peers.Set(addrs...)
+	// 将 HTTPPool 注册到 geecache 组中，以供其他缓存服务器使用。
+	gee.RegisterPeers(peers)
+	log.Println("geecache is running at", addr)
+	log.Fatal(http.ListenAndServe(addr[7:], peers))
 }
 
 // main 是程序的入口点
