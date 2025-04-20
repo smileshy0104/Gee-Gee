@@ -59,6 +59,7 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 		log.Printf("rpc server: invalid codec type %s", opt.CodecType)
 		return
 	}
+	// 处理连接
 	server.serveCodec(f(conn))
 }
 
@@ -70,16 +71,19 @@ func (server *Server) serveCodec(cc codec.Codec) {
 	sending := new(sync.Mutex) // 确保发送完整的响应
 	wg := new(sync.WaitGroup)  // 等待所有请求处理完成
 	for {
+		// 读取请求
 		req, err := server.readRequest(cc)
 		if err != nil {
 			if req == nil {
 				break // 无法恢复，关闭连接
 			}
 			req.h.Error = err.Error()
+			// 发送错误响应
 			server.sendResponse(cc, req.h, invalidRequest, sending)
 			continue
 		}
 		wg.Add(1)
+		// 处理请求
 		go server.handleRequest(cc, req, sending, wg)
 	}
 	wg.Wait()
@@ -96,6 +100,7 @@ type request struct {
 // readRequestHeader 从编解码器中读取请求头。
 func (server *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 	var h codec.Header
+	// 从连接中读取请求头。
 	if err := cc.ReadHeader(&h); err != nil {
 		if err != io.EOF && err != io.ErrUnexpectedEOF {
 			log.Println("rpc server: read header error:", err)
@@ -107,6 +112,7 @@ func (server *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 
 // readRequest 从编解码器中读取完整的请求。
 func (server *Server) readRequest(cc codec.Codec) (*request, error) {
+	// 读取请求头
 	h, err := server.readRequestHeader(cc)
 	if err != nil {
 		return nil, err
@@ -115,6 +121,7 @@ func (server *Server) readRequest(cc codec.Codec) (*request, error) {
 	// TODO: 目前我们不知道请求参数的类型
 	// 第一天，假设它是字符串
 	req.argv = reflect.New(reflect.TypeOf(""))
+	// 从连接中读取请求参数
 	if err = cc.ReadBody(req.argv.Interface()); err != nil {
 		log.Println("rpc server: read argv err:", err)
 	}
@@ -125,6 +132,7 @@ func (server *Server) readRequest(cc codec.Codec) (*request, error) {
 func (server *Server) sendResponse(cc codec.Codec, h *codec.Header, body interface{}, sending *sync.Mutex) {
 	sending.Lock()
 	defer sending.Unlock()
+	// 使用指定的编解码器发送响应
 	if err := cc.Write(h, body); err != nil {
 		log.Println("rpc server: write response error:", err)
 	}
@@ -137,6 +145,7 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 	defer wg.Done()
 	log.Println(req.h, req.argv.Elem())
 	req.replyv = reflect.ValueOf(fmt.Sprintf("geerpc resp %d", req.h.Seq))
+	// 发送响应
 	server.sendResponse(cc, req.h, req.replyv.Interface(), sending)
 }
 
